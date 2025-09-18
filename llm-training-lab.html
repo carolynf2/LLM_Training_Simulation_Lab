@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Data Training Lab</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+        .card h2 {
+            color: #5a67d8;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #5a67d8;
+            box-shadow: 0 0 0 3px rgba(90, 103, 216, 0.1);
+        }
+
+        .file-upload {
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background: #f7fafc;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            border-color: #5a67d8;
+            background: #edf2f7;
+        }
+
+        .file-upload.dragover {
+            border-color: #5a67d8;
+            background: #e6fffa;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #5a67d8, #667eea);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(90, 103, 216, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #718096, #a0aec0);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e53e3e, #fc8181);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #48bb78, #68d391);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #5a67d8;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.9em;
+            color: #718096;
+        }
+
+        .log-area {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border: 2px solid #2d3748;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-idle { background: #cbd5e0; }
+        .status-running { background: #48bb78; animation: pulse 2s infinite; }
+        .status-error { background: #e53e3e; }
+        .status-complete { background: #38b2ac; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .config-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .config-section h3 {
+            color: #5a67d8;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .range-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .range-group input[type="range"] {
+            flex: 1;
+        }
+
+        .range-value {
+            background: #5a67d8;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .monitoring-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+
+        .tab-container {
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .tab.active {
+            color: #5a67d8;
+            border-bottom-color: #5a67d8;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 10px;
+            }
+
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 LLM Data Training Lab</h1>
+            <p>Comprehensive toolkit for dataset preparation and LLM training</p>
+        </div>
+
+        <div class="main-grid">
+            <!-- Data Ingestion Panel -->
+            <div class="card">
+                <h2>📥 Data Ingestion</h2>
+
+                <div class="form-group">
+                    <label>Data Source Type:</label>
+                    <select id="sourceType">
+                        <option value="file">Local Files</option>
+                        <option value="web">Web Scraping</option>
+                        <option value="api">API Sources</option>
+                    </select>
+                </div>
+
+                <div id="fileUploadSection">
+                    <div class="file-upload" id="fileUpload">
+                        <p>📁 Drop files here or click to upload</p>
+                        <p style="font-size: 0.9em; color: #718096; margin-top: 10px;">
+                            Supported: JSON, JSONL, CSV, TXT, Parquet, XML
+                        </p>
+                        <input type="file" id="fileInput" multiple accept=".json,.jsonl,.csv,.txt,.parquet,.xml" style="display: none;">
+                    </div>
+                </div>
+
+                <div id="webScrapingSection" style="display: none;">
+                    <div class="form-group">
+                        <label>URLs (one per line):</label>
+                        <textarea rows="4" placeholder="https://example.com/data&#10;https://another-site.com/info"></textarea>
+                    </div>
+                </div>
+
+                <div id="apiSection" style="display: none;">
+                    <div class="form-group">
+                        <label>API Source:</label>
+                        <select>
+                            <option>Wikipedia</option>
+                            <option>Common Crawl</option>
+                            <option>arXiv</option>
+                            <option>Custom API</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Batch Size:</label>
+                    <input type="number" value="1000" min="1" max="10000">
+                </div>
+
+                <div class="form-group">
+                    <label>Max Workers:</label>
+                    <input type="number" value="4" min="1" max="16">
+                </div>
+
+                <button class="btn" onclick="startIngestion()">Start Ingestion</button>
+                <button class="btn btn-secondary" onclick="pauseIngestion()">Pause</button>
+            </div>
+
+            <!-- Preprocessing Panel -->
+            <div class="card">
+                <h2>⚙️ Preprocessing Pipeline</h2>
+
+                <div class="config-section">
+                    <h3>Text Cleaning</h3>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="removeHtml" checked>
+                            <label for="removeHtml">Remove HTML</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="normalizeUnicode" checked>
+                            <label for="normalizeUnicode">Normalize Unicode</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="fixEncoding" checked>
+                            <label for="fixEncoding">Fix Encoding</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="normalizeWhitespace" checked>
+                            <label for="normalizeWhitespace">Normalize Whitespace</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Min Text Length:</label>
+                        <div class="range-group">
+                            <input type="range" min="1" max="1000" value="10" id="minLength">
+                            <span class="range-value" id="minLengthValue">10</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Max Text Length:</label>
+                        <div class="range-group">
+                            <input type="range" min="100" max="50000" value="10000" id="maxLength">
+                            <span class="range-value" id="maxLengthValue">10000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>Tokenization</h3>
+                    <div class="form-group">
+                        <label>Tokenizer Type:</label>
+                        <select id="tokenizerType">
+                            <option value="sentencepiece">SentencePiece</option>
+                            <option value="bpe">BPE</option>
+                            <option value="wordpiece">WordPiece</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Vocabulary Size:</label>
+                        <input type="number" value="32000" min="1000" max="100000">
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>Deduplication</h3>
+                    <div class="form-group">
+                        <label>Method:</label>
+                        <select>
+                            <option value="minhash">MinHash</option>
+                            <option value="exact">Exact Match</option>
+                            <option value="fuzzy">Fuzzy Matching</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Similarity Threshold:</label>
+                        <div class="range-group">
+                            <input type="range" min="0.1" max="1.0" step="0.1" value="0.9" id="simThreshold">
+                            <span class="range-value" id="simThresholdValue">0.9</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="startPreprocessing()">Start Processing</button>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Quality Assessment Panel -->
+            <div class="card">
+                <h2>📊 Quality Assessment</h2>
+
+                <div class="config-section">
+                    <h3>Language Filters</h3>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="langEn" checked>
+                            <label for="langEn">English</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="langEs">
+                            <label for="langEs">Spanish</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="langFr">
+                            <label for="langFr">French</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="langDe">
+                            <label for="langDe">German</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>Quality Thresholds</h3>
+                    <div class="form-group">
+                        <label>Max Toxicity Score:</label>
+                        <div class="range-group">
+                            <input type="range" min="0.0" max="1.0" step="0.1" value="0.3" id="toxicityThreshold">
+                            <span class="range-value" id="toxicityValue">0.3</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Min Quality Score:</label>
+                        <div class="range-group">
+                            <input type="range" min="0.0" max="1.0" step="0.1" value="0.7" id="qualityThreshold">
+                            <span class="range-value" id="qualityValue">0.7</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Max Perplexity:</label>
+                        <div class="range-group">
+                            <input type="range" min="100" max="5000" value="1000" id="perplexityThreshold">
+                            <span class="range-value" id="perplexityValue">1000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="documentsProcessed">0</div>
+                        <div class="metric-label">Documents</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="tokensProcessed">0</div>
+                        <div class="metric-label">Tokens</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="qualityScore">0.0</div>
+                        <div class="metric-label">Avg Quality</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="duplicatesFound">0</div>
+                        <div class="metric-label">Duplicates</div>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="runQualityAssessment()">Assess Quality</button>
+                <button class="btn btn-secondary" onclick="generateReport()">Generate Report</button>
+            </div>
+
+            <!-- Data Augmentation & Export Panel -->
+            <div class="card">
+                <h2>🔄 Augmentation & Export</h2>
+
+                <div class="config-section">
+                    <h3>Augmentation Techniques</h3>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="paraphrase">
+                            <label for="paraphrase">Paraphrasing</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="backTranslation">
+                            <label for="backTranslation">Back Translation</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="templateGen">
+                            <label for="templateGen">Template Generation</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="syntheticGen">
+                            <label for="syntheticGen">Synthetic Generation</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Augmentation Ratio:</label>
+                        <div class="range-group">
+                            <input type="range" min="0.0" max="2.0" step="0.1" value="0.2" id="augmentationRatio">
+                            <span class="range-value" id="augmentationRatioValue">0.2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>Export Configuration</h3>
+                    <div class="form-group">
+                        <label>Output Format:</label>
+                        <select id="outputFormat">
+                            <option value="jsonl">JSONL</option>
+                            <option value="parquet">Parquet</option>
+                            <option value="hf_dataset">HuggingFace Dataset</option>
+                            <option value="tfrecord">TFRecord</option>
+                            <option value="csv">CSV</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Train/Val/Test Split:</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="font-size: 0.9em;">Train:</label>
+                                <input type="number" value="0.8" step="0.1" min="0" max="1" id="trainSplit">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.9em;">Validation:</label>
+                                <input type="number" value="0.1" step="0.1" min="0" max="1" id="valSplit">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.9em;">Test:</label>
+                                <input type="number" value="0.1" step="0.1" min="0" max="1" id="testSplit">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Compression:</label>
+                        <select>
+                            <option value="gzip">GZIP</option>
+                            <option value="none">None</option>
+                            <option value="lz4">LZ4</option>
+                            <option value="snappy">Snappy</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="startAugmentation()">Start Augmentation</button>
+                <button class="btn" onclick="exportDataset()">Export Dataset</button>
+            </div>
+        </div>
+
+        <!-- Monitoring and Logging Panel -->
+        <div class="monitoring-panel full-width">
+            <h2>📈 Monitoring & Progress</h2>
+
+            <div class="tab-container">
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('progress')">Progress</div>
+                    <div class="tab" onclick="switchTab('logs')">Logs</div>
+                    <div class="tab" onclick="switchTab('metrics')">Metrics</div>
+                    <div class="tab" onclick="switchTab('config')">Configuration</div>
+                </div>
+
+                <div id="progressTab" class="tab-content active">
+                    <div class="form-group">
+                        <label>
+                            <span class="status-indicator status-idle"></span>
+                            Pipeline Status: <span id="pipelineStatus">Idle</span>
+                        </label>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="overallProgress"></div>
+                        </div>
+                        <div style="text-align: center; margin-top: 10px;">
+                            <span id="progressText">Ready to start processing</span>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0;">
+                        <div class="metric-card">
+                            <div class="metric-value" id="processingSpeed">0</div>
+                            <div class="metric-label">Tokens/Second</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="memoryUsage">0</div>
+                            <div class="metric-label">Memory (MB)</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="errorRate">0</div>
+                            <div class="metric-label">Error Rate (%)</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="eta">--</div>
+                            <div class="metric-label">ETA</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="logsTab" class="tab-content">
+                    <div class="log-area" id="logOutput">
+                        [2024-01-01 12:00:00] INFO: LLM Training Lab initialized
+                        [2024-01-01 12:00:01] INFO: Ready to process datasets
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <button class="btn btn-secondary" onclick="clearLogs()">Clear Logs</button>
+                        <button class="btn btn-secondary" onclick="exportLogs()">Export Logs</button>
+                    </div>
+                </div>
+
+                <div id="metricsTab" class="tab-content">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                        <div>
+                            <h3>Data Quality Metrics</h3>
+                            <div class="metric-card">
+                                <div class="metric-value" id="avgReadability">0.0</div>
+                                <div class="metric-label">Avg Readability Score</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value" id="vocabularyRichness">0.0</div>
+                                <div class="metric-label">Vocabulary Richness</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value" id="languageDetectionAcc">0.0</div>
+                                <div class="metric-label">Language Detection Accuracy</div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3>Processing Metrics</h3>
+                            <div class="metric-card">
+                                <div class="metric-value" id="totalProcessingTime">0</div>
+                                <div class="metric-label">Total Processing Time (min)</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value" id="augmentationEffectiveness">0.0</div>
+                                <div class="metric-label">Augmentation Effectiveness</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value" id="compressionRatio">0.0</div>
+                                <div class="metric-label">Compression Ratio</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="configTab" class="tab-content">
+                    <h3>Current Configuration</h3>
+                    <div class="log-area" id="configDisplay" style="height: 200px;">
+                        {
+                          "project": {
+                            "name": "my_training_dataset",
+                            "version": "1.0.0",
+                            "description": "Dataset for fine-tuning"
+                          },
+                          "ingestion": {
+                            "batch_size": 1000,
+                            "max_workers": 4
+                          },
+                          "preprocessing": {
+                            "cleaning": {
+                              "remove_html": true,
+                              "normalize_unicode": true,
+                              "min_length": 10,
+                              "max_length": 10000
+                            }
+                          }
+                        }
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <button class="btn" onclick="saveConfig()">Save Config</button>
+                        <button class="btn btn-secondary" onclick="loadConfig()">Load Config</button>
+                        <button class="btn btn-secondary" onclick="resetConfig()">Reset to Default</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn" onclick="runFullPipeline()">🚀 Run Full Pipeline</button>
+                <button class="btn btn-danger" onclick="stopPipeline()">⏹️ Stop Pipeline</button>
+                <button class="btn btn-secondary" onclick="savePipelineState()">💾 Save State</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state management
+        let pipelineState = {
+            status: 'idle',
+            currentStep: '',
+            progress: 0,
+            startTime: null,
+            metrics: {
+                documentsProcessed: 0,
+                tokensProcessed: 0,
+                qualityScore: 0.0,
+                duplicatesFound: 0,
+                processingSpeed: 0,
+                memoryUsage: 0,
+                errorRate: 0
+            }
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEventListeners();
+            updateUI();
+            simulateMetrics();
+        });
+
+        function initializeEventListeners() {
+            // File upload handling
+            const fileUpload = document.getElementById('fileUpload');
+            const fileInput = document.getElementById('fileInput');
+
+            fileUpload.addEventListener('click', () => fileInput.click());
+            fileUpload.addEventListener('dragover', handleDragOver);
+            fileUpload.addEventListener('drop', handleFileDrop);
+            fileInput.addEventListener('change', handleFileSelect);
+
+            // Source type switching
+            document.getElementById('sourceType').addEventListener('change', switchSourceType);
+
+            // Range slider updates
+            setupRangeSliders();
+        }
+
+        function setupRangeSliders() {
+            const ranges = [
+                { slider: 'minLength', display: 'minLengthValue' },
+                { slider: 'maxLength', display: 'maxLengthValue' },
+                { slider: 'simThreshold', display: 'simThresholdValue' },
+                { slider: 'toxicityThreshold', display: 'toxicityValue' },
+                { slider: 'qualityThreshold', display: 'qualityValue' },
+                { slider: 'perplexityThreshold', display: 'perplexityValue' },
+                { slider: 'augmentationRatio', display: 'augmentationRatioValue' }
+            ];
+
+            ranges.forEach(({ slider, display }) => {
+                const sliderEl = document.getElementById(slider);
+                const displayEl = document.getElementById(display);
+
+                if (sliderEl && displayEl) {
+                    sliderEl.addEventListener('input', () => {
+                        displayEl.textContent = sliderEl.value;
+                    });
+                }
+            });
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleFileDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files);
+            processFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            processFiles(files);
+        }
+
+        function processFiles(files) {
+            const supportedTypes = ['.json', '.jsonl', '.csv', '.txt', '.parquet', '.xml'];
+            const validFiles = files.filter(file =>
+                supportedTypes.some(type => file.name.toLowerCase().endsWith(type))
+            );
+
+            if (validFiles.length > 0) {
+                logMessage(`Successfully loaded ${validFiles.length} file(s)`);
+                validFiles.forEach(file => {
+                    logMessage(`- ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+                });
+            } else {
+                logMessage('No supported files found. Please upload JSON, JSONL, CSV, TXT, Parquet, or XML files.', 'error');
+            }
+        }
+
+        function switchSourceType() {
+            const sourceType = document.getElementById('sourceType').value;
+            const sections = {
+                file: 'fileUploadSection',
+                web: 'webScrapingSection',
+                api: 'apiSection'
+            };
+
+            Object.values(sections).forEach(section => {
+                document.getElementById(section).style.display = 'none';
+            });
+
+            if (sections[sourceType]) {
+                document.getElementById(sections[sourceType]).style.display = 'block';
+            }
+        }
+
+        function switchTab(tabName) {
+            // Remove active class from all tabs and content
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            // Add active class to selected tab and content
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        function updateUI() {
+            // Update status indicator
+            const statusIndicator = document.querySelector('.status-indicator');
+            const statusText = document.getElementById('pipelineStatus');
+
+            statusIndicator.className = `status-indicator status-${pipelineState.status}`;
+            statusText.textContent = pipelineState.status.charAt(0).toUpperCase() + pipelineState.status.slice(1);
+
+            // Update progress bar
+            const progressFill = document.getElementById('overallProgress');
+            const progressText = document.getElementById('progressText');
+
+            progressFill.style.width = `${pipelineState.progress}%`;
+            progressText.textContent = pipelineState.currentStep || 'Ready to start processing';
+
+            // Update metrics
+            Object.keys(pipelineState.metrics).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.textContent = pipelineState.metrics[key];
+                }
+            });
+        }
+
+        function logMessage(message, level = 'info') {
+            const logOutput = document.getElementById('logOutput');
+            const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            const logLevel = level.toUpperCase();
+            const logEntry = `[${timestamp}] ${logLevel}: ${message}`;
+
+            logOutput.innerHTML += logEntry + '\n';
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function simulateMetrics() {
+            setInterval(() => {
+                if (pipelineState.status === 'running') {
+                    pipelineState.metrics.processingSpeed = Math.floor(Math.random() * 5000) + 1000;
+                    pipelineState.metrics.memoryUsage = Math.floor(Math.random() * 2000) + 500;
+                    pipelineState.metrics.errorRate = (Math.random() * 2).toFixed(1);
+                    updateUI();
+                }
+            }, 2000);
+        }
+
+        // Pipeline control functions
+        function startIngestion() {
+            pipelineState.status = 'running';
+            pipelineState.currentStep = 'Starting data ingestion...';
+            pipelineState.startTime = new Date();
+            logMessage('Data ingestion started');
+            updateUI();
+
+            simulateProgress('ingestion', 30, () => {
+                logMessage('Data ingestion completed successfully');
+                pipelineState.currentStep = 'Ingestion complete';
+            });
+        }
+
+        function startPreprocessing() {
+            pipelineState.status = 'running';
+            pipelineState.currentStep = 'Starting preprocessing pipeline...';
+            logMessage('Preprocessing pipeline started');
+            updateUI();
+
+            simulateProgress('preprocessing', 40, () => {
+                logMessage('Preprocessing completed successfully');
+                pipelineState.currentStep = 'Preprocessing complete';
+            });
+        }
+
+        function runQualityAssessment() {
+            pipelineState.status = 'running';
+            pipelineState.currentStep = 'Running quality assessment...';
+            logMessage('Quality assessment started');
+            updateUI();
+
+            simulateProgress('quality', 20, () => {
+                logMessage('Quality assessment completed');
+                pipelineState.currentStep = 'Quality assessment complete';
+                pipelineState.metrics.qualityScore = (Math.random() * 0.3 + 0.7).toFixed(2);
+                pipelineState.metrics.duplicatesFound = Math.floor(Math.random() * 500);
+            });
+        }
+
+        function startAugmentation() {
+            pipelineState.status = 'running';
+            pipelineState.currentStep = 'Starting data augmentation...';
+            logMessage('Data augmentation started');
+            updateUI();
+
+            simulateProgress('augmentation', 25, () => {
+                logMessage('Data augmentation completed');
+                pipelineState.currentStep = 'Augmentation complete';
+            });
+        }
+
+        function exportDataset() {
+            const format = document.getElementById('outputFormat').value;
+            pipelineState.status = 'running';
+            pipelineState.currentStep = `Exporting dataset to ${format.toUpperCase()}...`;
+            logMessage(`Dataset export started (${format})`);
+            updateUI();
+
+            simulateProgress('export', 15, () => {
+                logMessage(`Dataset exported successfully to ${format} format`);
+                pipelineState.currentStep = 'Export complete';
+                pipelineState.status = 'complete';
+            });
+        }
+
+        function runFullPipeline() {
+            pipelineState.status = 'running';
+            pipelineState.progress = 0;
+            pipelineState.currentStep = 'Initializing full pipeline...';
+            pipelineState.startTime = new Date();
+            logMessage('Full pipeline execution started');
+            updateUI();
+
+            // Simulate full pipeline execution
+            const steps = [
+                { name: 'Data Ingestion', duration: 3000 },
+                { name: 'Preprocessing', duration: 4000 },
+                { name: 'Quality Assessment', duration: 2000 },
+                { name: 'Data Augmentation', duration: 3000 },
+                { name: 'Export', duration: 2000 }
+            ];
+
+            let currentStep = 0;
+            const totalDuration = steps.reduce((sum, step) => sum + step.duration, 0);
+            let elapsedTime = 0;
+
+            function executeStep() {
+                if (currentStep < steps.length) {
+                    const step = steps[currentStep];
+                    pipelineState.currentStep = `Executing ${step.name}...`;
+                    logMessage(`Starting ${step.name}`);
+                    updateUI();
+
+                    setTimeout(() => {
+                        elapsedTime += step.duration;
+                        pipelineState.progress = (elapsedTime / totalDuration) * 100;
+                        logMessage(`${step.name} completed`);
+                        currentStep++;
+                        executeStep();
+                    }, step.duration);
+                } else {
+                    pipelineState.status = 'complete';
+                    pipelineState.currentStep = 'Pipeline execution completed successfully';
+                    pipelineState.progress = 100;
+                    logMessage('Full pipeline execution completed successfully');
+                    updateUI();
+                }
+            }
+
+            executeStep();
+        }
+
+        function stopPipeline() {
+            pipelineState.status = 'idle';
+            pipelineState.currentStep = 'Pipeline stopped by user';
+            pipelineState.progress = 0;
+            logMessage('Pipeline execution stopped');
+            updateUI();
+        }
+
+        function pauseIngestion() {
+            if (pipelineState.status === 'running') {
+                pipelineState.status = 'idle';
+                logMessage('Data ingestion paused');
+            } else {
+                pipelineState.status = 'running';
+                logMessage('Data ingestion resumed');
+            }
+            updateUI();
+        }
+
+        function simulateProgress(stepName, duration, onComplete) {
+            const stepProgress = duration;
+            let currentProgress = 0;
+
+            const interval = setInterval(() => {
+                currentProgress += 1;
+                pipelineState.progress = Math.min(100, (currentProgress / stepProgress) * 100);
+                updateUI();
+
+                if (currentProgress >= stepProgress) {
+                    clearInterval(interval);
+                    pipelineState.status = 'idle';
+                    if (onComplete) onComplete();
+                    updateUI();
+                }
+            }, 100);
+        }
+
+        // Utility functions
+        function generateReport() {
+            logMessage('Generating quality assessment report...');
+            setTimeout(() => {
+                logMessage('Quality report generated: quality_report.html');
+            }, 1000);
+        }
+
+        function clearLogs() {
+            document.getElementById('logOutput').innerHTML = '[' + new Date().toISOString().slice(0, 19).replace('T', ' ') + '] INFO: Logs cleared\n';
+        }
+
+        function exportLogs() {
+            const logs = document.getElementById('logOutput').textContent;
+            const blob = new Blob([logs], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'llm_training_lab_logs.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+            logMessage('Logs exported successfully');
+        }
+
+        function saveConfig() {
+            logMessage('Configuration saved successfully');
+        }
+
+        function loadConfig() {
+            logMessage('Configuration loaded successfully');
+        }
+
+        function resetConfig() {
+            logMessage('Configuration reset to defaults');
+        }
+
+        function savePipelineState() {
+            logMessage('Pipeline state saved successfully');
+        }
+    </script>
+</body>
+</html>
